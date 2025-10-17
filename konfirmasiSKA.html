@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifikasi Pembayaran PPDB</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-6">
+  <h1 class="text-2xl font-bold text-green-700 mb-4 text-center">Verifikasi Jalur SKA</h1>
+
+  <!-- Filter -->
+  <div class="w-full max-w-5xl px-3 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+    <input id="searchInput" type="text" placeholder="Cari NIK / Nama / WA..."
+      class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-400">
+
+    <select id="statusFilter"
+      class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-400">
+      <option value="">Semua Status</option>
+      <option value="Disetujui">Disetujui</option>
+      <option value="Menunggu">Menunggu</option>
+      <option value="Ditolak">Ditolak</option>
+    </select>
+
+    <input id="tanggalFilter" type="date"
+      class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-400">
+  </div>
+
+  <!-- Loading -->
+  <div id="loading" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+      <div class="loader mx-auto mb-3 border-t-4 border-green-600 border-solid rounded-full w-10 h-10 animate-spin"></div>
+      <p class="text-gray-600 text-sm">Memuat data...</p>
+    </div>
+  </div>
+
+  <!-- Container -->
+  <div id="cardContainer" class="w-full max-w-5xl px-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+  <!-- Modal Popup -->
+  <div id="popupModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl w-11/12 md:w-3/4 lg:w-1/2 relative">
+      <button onclick="closePopup()" 
+        class="absolute top-2 right-2 text-gray-500 hover:text-red-500 text-xl font-bold">&times;</button>
+      <iframe id="popupFrame" src="" class="w-full h-[80vh] rounded-b-xl"></iframe>
+    </div>
+  </div>
+
+ <script>
+const scriptURL = "https://script.google.com/macros/s/AKfycbyEjfqfygNkwY6dXfFp81Fi8N2m9VJFKVh2I4v5zjeFDQvSbVh9QvGtSFWPAXGJdmNd/exec";
+const loading = document.getElementById("loading");
+const container = document.getElementById("cardContainer");
+
+let allData = [];
+let searchValue = "", statusValue = "", dateValue = "";
+
+// === FETCH DATA ===
+async function fetchData(showLoading = true) {
+  if (showLoading) loading.classList.remove("hidden");
+  try {
+    const res = await fetch(`${scriptURL}?action=getData`);
+    const data = await res.json();
+    allData = data.map(d => ({
+      ...d,
+      status: d.status || 'Menunggu',
+      nik: String(d.nik || '').trim(),
+      nama: String(d.nama || '').trim(),
+      wa: String(d.wa || '').trim()
+    }));
+    applyFilter(); // tetap tampilkan filter aktif
+  } catch (err) {
+    console.error("Gagal memuat data:", err);
+  } finally {
+    if (showLoading) loading.classList.add("hidden");
+  }
+}
+
+// Muat awal dan auto-refresh tiap 30 detik
+fetchData(true);
+setInterval(() => fetchData(false), 3000);
+
+// === FORMAT TANGGAL ===
+function formatTanggal(tgl) {
+  const d = new Date(tgl);
+  if (isNaN(d)) return "Belum ada tanggal";
+  return d.toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+// === RENDER CARD ===
+function renderCards(data) {
+  container.innerHTML = "";
+  if (data.length === 0) {
+    container.innerHTML = `<p class="text-center col-span-full text-gray-500 mt-4">Tidak ada data.</p>`;
+    return;
+  }
+
+  // Urutkan dari tanggal terbaru
+  data.sort((a, b) => new Date(b.tanggalDaftar || 0) - new Date(a.tanggalDaftar || 0));
+
+  // Kelompokkan berdasarkan tanggal
+  const grouped = {};
+  data.forEach(i => {
+    const key = i.tanggalDaftar || "Belum ada tanggal";
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(i);
+  });
+
+  for (const tanggal of Object.keys(grouped)) {
+    const header = document.createElement("div");
+    header.className = "col-span-full w-full px-3 py-1 bg-gray-200 rounded-md mt-4 text-gray-700 font-semibold";
+    header.textContent = formatTanggal(tanggal);
+    container.appendChild(header);
+
+    grouped[tanggal].forEach(item => {
+      let cardColor = "border-gray-200";
+      if (item.status === "Disetujui") cardColor = "border-green-500 bg-green-50";
+      else if (!item.status || item.status === "Menunggu") cardColor = "border-yellow-400 bg-yellow-50";
+      else if (item.status === "Ditolak") cardColor = "border-red-500 bg-red-50";
+
+      const statusColor =
+        item.status === "Disetujui" ? "text-green-600" :
+        item.status === "Ditolak" ? "text-red-600" :
+        "text-gray-500";
+
+      const card = document.createElement("div");
+      card.className = `rounded-xl shadow-md p-4 hover:shadow-lg transition mt-2 border ${cardColor}`;
+      card.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-800">${item.nama}</h2>
+            <p class="text-sm text-gray-600 mb-1">${item.nik}</p>
+            <p class="text-sm text-gray-500"><span class="font-medium">No. WA:</span> ${item.wa}</p>
+          </div>
+          <span class="text-xs font-semibold ${statusColor}">${item.status}</span>
+        </div>
+
+        <div class="mt-3">
+          ${item.linkBukti
+            ? `<button onclick="openPopup('${item.linkBukti}')"
+                class="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded-lg">Lihat Bukti</button>`
+            : `<span class='text-xs text-gray-400 italic'>Tidak ada bukti</span>`}
+        </div>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          ${item.status === "Disetujui"
+            ? `<button class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm"
+                onclick="sendWA('${item.nama}', '${item.wa}', '${item.nik}', '${item.password}')">Kirim WA</button>`
+            : `
+              <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm"
+                onclick="updateStatus(${item.row}, 'Disetujui')">Setujui</button>
+              <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm"
+                onclick="updateStatus(${item.row}, 'Ditolak')">Tolak</button>
+            `}
+          <button class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-lg text-sm"
+            onclick="hapusData(${item.row})">Hapus</button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+}
+
+// === FILTER ===
+function applyFilter() {
+  const filtered = allData.filter(item => {
+    const nik = item.nik?.toLowerCase() || "";
+    const nama = item.nama?.toLowerCase() || "";
+    const wa = item.wa?.toLowerCase() || "";
+
+    const matchText =
+      nik.includes(searchValue) ||
+      nama.includes(searchValue) ||
+      wa.includes(searchValue);
+
+    const matchStatus = statusValue ? item.status === statusValue : true;
+
+    let tanggalData = "";
+    if (item.tanggalDaftar) {
+      const t = new Date(item.tanggalDaftar);
+      tanggalData = t.toISOString().split("T")[0];
+    }
+
+    const matchTanggal = dateValue ? tanggalData === dateValue : true;
+    return matchText && matchStatus && matchTanggal;
+  });
+
+  renderCards(filtered);
+}
+
+// === EVENT LISTENER ===
+document.getElementById("searchInput").addEventListener("input", e => {
+  searchValue = e.target.value.trim().toLowerCase();
+  applyFilter();
+});
+
+document.getElementById("statusFilter").addEventListener("change", e => {
+  statusValue = e.target.value;
+  applyFilter();
+});
+
+document.getElementById("tanggalFilter").addEventListener("change", e => {
+  dateValue = e.target.value;
+  applyFilter();
+});
+
+
+// === UPDATE STATUS ===
+async function updateStatus(row, status) {
+  loading.classList.remove("hidden");
+  try {
+    await fetch(`${scriptURL}?action=setStatus&row=${row}&status=${status}`, { method: "POST" });
+    await fetchData();
+  } catch (err) {
+    Swal.fire('Gagal!', 'Gagal memperbarui status.', 'error');
+  } finally {
+    loading.classList.add("hidden");
+  }
+}
+
+// === HAPUS DATA ===
+async function hapusData(row) {
+  const result = await Swal.fire({
+    title: 'Hapus Data?',
+    text: "Apakah Anda yakin ingin menghapus data ini?",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, hapus!',
+    cancelButtonText: 'Batal'
+  });
+
+  if (result.isConfirmed) {
+    loading.classList.remove("hidden");
+    try {
+      await fetch(`${scriptURL}?action=deleteRow&row=${row}`, { method: "POST" });
+      await fetchData();
+      Swal.fire('Terhapus!', 'Data berhasil dihapus.', 'success');
+    } catch (err) {
+      Swal.fire('Gagal!', 'Gagal menghapus data.', 'error');
+    } finally {
+      loading.classList.add("hidden");
+    }
+  }
+}
+
+// === POPUP DRIVE ===
+function formatDriveLink(url) {
+  const match = url.match(/\/d\/(.*?)(\/|$)/);
+  return match ? `https://drive.google.com/file/d/${match[1]}/preview` : url;
+}
+
+function openPopup(url) {
+  const modal = document.getElementById('popupModal');
+  const frame = document.getElementById('popupFrame');
+  frame.src = formatDriveLink(url);
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closePopup() {
+  const modal = document.getElementById('popupModal');
+  const frame = document.getElementById('popupFrame');
+  frame.src = "";
+  modal.classList.add('hidden');
+}
+
+// === KIRIM WHATSAPP ===
+function sendWA(nama, wa, nik, password) {
+  const nomor = wa.startsWith('0') ? '62' + wa.slice(1) :
+                wa.startsWith('62') ? wa : '62' + wa;
+  const pesan = encodeURIComponent(
+    `Assalamualaikum ${nama},\n\nAkun PPDB Anda telah *DISETUJUI*.\nBerikut detail akun Anda:\n\nNIK: ${nik}\nPassword: ${password}\n\nSilakan login ke halaman PPDB untuk melanjutkan pendaftaran.\n\nSyukron Jazakumullohu Khoiron.`
+  );
+  const url = `https://wa.me/${nomor}?text=${pesan}`;
+  const popup = window.open(url, "popupWA", "width=500,height=700,scrollbars=yes,resizable=yes");
+  if (!popup) alert("Popup diblokir. Izinkan popup agar bisa membuka WhatsApp Web.");
+}
+</script>
+
+
+  <style>
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #22c55e;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</body>
+</html>
