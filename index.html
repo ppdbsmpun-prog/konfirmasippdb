@@ -23,6 +23,7 @@
   <nav class="flex justify-around bg-white shadow-md py-2">
     <button id="btnSKA" class="nav-btn text-gray-700 font-semibold hover:text-green-600 transition">Konfirmasi SKA</button>
     <button id="btnKBUN" class="nav-btn text-gray-700 font-semibold hover:text-green-600 transition">Konfirmasi KBUN</button>
+    <button id="btnAlumni" class="nav-btn text-gray-700 font-semibold hover:text-green-600 transition">Konfirmasi Alumni</button>
   </nav>
 
   <!-- Iframe Container -->
@@ -39,6 +40,7 @@
     const iframe = document.getElementById('iframePage');
     const btnSKA = document.getElementById('btnSKA');
     const btnKBUN = document.getElementById('btnKBUN');
+    const btnAlumni = document.getElementById('btnAlumni');
     const navBtns = document.querySelectorAll('.nav-btn');
 
     // Fungsi ubah halaman
@@ -51,6 +53,7 @@
     // Event listener tombol
     btnSKA.addEventListener('click', () => setActive(btnSKA, 'konfirmasiSKA.html'));
     btnKBUN.addEventListener('click', () => setActive(btnKBUN, 'konfirmasiKBUN.html'));
+    btnAlumni.addEventListener('click', () => setActive(btnAlumni, 'konfirmasiAlumni.html'));
 
     // Default aktif SKA
     setActive(btnSKA, 'konfirmasiSKA.html');
