@@ -21,14 +21,27 @@
 
   <!-- Navigation -->
   <nav class="flex justify-around bg-white shadow-md py-2">
-    <button id="btnSKA" class="nav-btn text-gray-700 font-semibold hover:text-green-600 transition">Konfirmasi SKA</button>
-    <button id="btnKBUN" class="nav-btn text-gray-700 font-semibold hover:text-green-600 transition">Konfirmasi KBUN</button>
-    <button id="btnAlumni" class="nav-btn text-gray-700 font-semibold hover:text-green-600 transition">Konfirmasi Alumni</button>
+    <button id="btnSKA" class="nav-btn text-gray-700 font-semibold hover:text-green-600 transition">
+      Konfirmasi SKA
+    </button>
+    <button id="btnKBUN" class="nav-btn text-gray-700 font-semibold hover:text-green-600 transition">
+      Konfirmasi KBUN
+    </button>
+    <button id="btnAlumni" class="nav-btn text-gray-700 font-semibold hover:text-green-600 transition">
+      Konfirmasi Alumni
+    </button>
+    <button id="btnUmum" class="nav-btn text-gray-700 font-semibold hover:text-green-600 transition">
+      Konfirmasi Umum
+    </button>
   </nav>
 
   <!-- Iframe Container -->
   <main class="flex-1">
-    <iframe id="iframePage" src="konfirmasiSKA.html" class="w-full h-[calc(100vh-130px)] border-none"></iframe>
+    <iframe
+      id="iframePage"
+      src="konfirmasiSKA.html"
+      class="w-full h-[calc(100vh-130px)] border-none">
+    </iframe>
   </main>
 
   <!-- Footer -->
@@ -41,6 +54,7 @@
     const btnSKA = document.getElementById('btnSKA');
     const btnKBUN = document.getElementById('btnKBUN');
     const btnAlumni = document.getElementById('btnAlumni');
+    const btnUmum = document.getElementById('btnUmum');
     const navBtns = document.querySelectorAll('.nav-btn');
 
     // Fungsi ubah halaman
@@ -54,8 +68,9 @@
     btnSKA.addEventListener('click', () => setActive(btnSKA, 'konfirmasiSKA.html'));
     btnKBUN.addEventListener('click', () => setActive(btnKBUN, 'konfirmasiKBUN.html'));
     btnAlumni.addEventListener('click', () => setActive(btnAlumni, 'konfirmasiAlumni.html'));
+    btnUmum.addEventListener('click', () => setActive(btnUmum, 'konfirmasiUmum.html'));
 
-    // Default aktif SKA
+    // Default aktif
     setActive(btnSKA, 'konfirmasiSKA.html');
   </script>
 
