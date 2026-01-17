@@ -269,15 +269,29 @@ function closePopup() {
 
 // === KIRIM WHATSAPP ===
 function sendWA(nama, wa, nik, password) {
-  const nomor = wa.startsWith('0') ? '62' + wa.slice(1) :
-                wa.startsWith('62') ? wa : '62' + wa;
+  const nomor = wa.startsWith('0') 
+    ? '62' + wa.slice(1)
+    : wa.startsWith('62') 
+      ? wa 
+      : '62' + wa;
+
   const pesan = encodeURIComponent(
-    `Assalamualaikum ${nama},\n\nAkun PPDB Anda telah *DISETUJUI*.\nBerikut detail akun Anda:\n\nNIK: ${nik}\nPassword: ${password}\n\nSilakan login ke halaman PPDB untuk melanjutkan pendaftaran.\n\nSyukron Jazakumullohu Khoiron.`
+    `Assalamualaikum ${nama},\n\n` +
+    `Akun PPDB Anda telah *DISETUJUI*.\n\n` +
+    `Berikut detail akun Anda:\n\n` +
+    `NIK: ${nik}\n` +
+    `Password: ${password}\n\n` +
+    `Silakan login ke halaman login PPDB untuk melanjutkan pendaftaran melalui link berikut:\n` +
+    `https://ulunnuha.id\n\n` +
+    `Syukron Jazakumullohu Khoiron.`
   );
+
   const url = `https://wa.me/${nomor}?text=${pesan}`;
   const popup = window.open(url, "popupWA", "width=500,height=700,scrollbars=yes,resizable=yes");
+
   if (!popup) alert("Popup diblokir. Izinkan popup agar bisa membuka WhatsApp Web.");
 }
+
 </script>
 
 
@@ -294,3 +308,4 @@ function sendWA(nama, wa, nik, password) {
   </style>
 </body>
 </html>
+
